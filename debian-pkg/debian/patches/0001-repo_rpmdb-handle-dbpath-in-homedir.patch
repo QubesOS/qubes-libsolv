@@ -1,0 +1,279 @@
+From 8f0f7915a091d6d4def7cda84e9e9986ce63aa4d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Pierret=20=28fepitre=29?=
+ <frederic.pierret@qubes-os.org>
+Date: Fri, 9 Oct 2020 16:57:57 +0200
+Subject: [PATCH] repo_rpmdb: handle dbpath in homedir
+
+Based on previous original work of author in https://lists.debian.org/debian-devel/2019/09/msg00218.html.
+
+Original description:
+
+    rpm on Debian is patched to not use the default system-wide rpm database.
+    Instead, the dbpath is hardcoded to ~/.rpmdb.
+
+    Since libsolv does not use librpm in all cases in order to open rpm database
+    files, implement an override in RPMDB handling for databases in home
+    directories.
+
+    This patch is mostly only useful on Debian, but shouldn't break other distros
+    and can thus be upstreamed.
+
+    One difference from the Debian rpm behavior exists: if there is no rpmdb in the
+    user's home directory, libsolv will fall back to the system-wide rpm database.
+
+    To use this new functionality, call repo_add_rpmdb{,_reffp}() with the
+    RPMDB_USE_HOMEDIR flag set or rpm_state_create_real(pool, rootdir, 1) in your
+    application.
+---
+ ext/libsolvext.ver      |  1 +
+ ext/repo_rpmdb.c        | 63 +++++++++++++++++++++++++++++++++++++++++
+ ext/repo_rpmdb.h        |  9 +++++-
+ ext/repo_rpmdb_bdb.h    | 26 +++++++++++++++--
+ ext/repo_rpmdb_librpm.h | 21 ++++++++++++++
+ 5 files changed, 117 insertions(+), 3 deletions(-)
+
+diff --git a/ext/libsolvext.ver b/ext/libsolvext.ver
+index 64238378..bc5905d7 100644
+--- a/ext/libsolvext.ver
++++ b/ext/libsolvext.ver
+@@ -54,6 +54,7 @@ SOLV_1.0 {
+ 		rpm_query_num;
+ 		rpm_stat_database;
+ 		rpm_state_create;
++		rpm_state_create_real;
+ 		rpm_state_free;
+ 		solv_verify_sig;
+ 		solv_xfopen;
+diff --git a/ext/repo_rpmdb.c b/ext/repo_rpmdb.c
+index ed986281..fb2eb821 100644
+--- a/ext/repo_rpmdb.c
++++ b/ext/repo_rpmdb.c
+@@ -23,6 +23,7 @@
+ #include <assert.h>
+ #include <stdint.h>
+ #include <errno.h>
++#include <pwd.h>
+ 
+ #ifdef ENABLE_RPMDB
+ 
+@@ -1225,6 +1226,55 @@ getu32(const unsigned char *dp)
+   return dp[0] << 24 | dp[1] << 16 | dp[2] << 8 | dp[3];
+ }
+ 
++static char *
++get_homedir(void)
++{
++  char *home_dir = NULL;
++
++  const char *home_env = getenv("HOME");
++
++  if (home_env)
++    {
++      home_dir = solv_strdup(home_env);
++    }
++  else
++    {
++      /* HOME unset, try password database. */
++      struct passwd pwd = { 0 };
++      struct passwd *pwd_res = NULL;
++      char *buf = NULL;
++      long buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
++
++      if (-1 == buf_size)
++        {
++          buf_size = 32768;
++        }
++
++      buf = solv_calloc(1, buf_size);
++
++      if (buf)
++        {
++          int ret = getpwuid_r(getuid(), &pwd, buf, buf_size, &pwd_res);
++
++          /*
++           * No pwd_res can either mean that the user ID is unknown
++           * to the system or some other type of error occurred.
++           * Whatever the case, we do not distinguish here, but just
++           * treat it as a common failure.
++           */
++          if ((!ret) && (pwd_res) && (pwd.pw_dir))
++            {
++              home_dir = solv_strdup(pwd.pw_dir);
++            }
++
++          solv_free(buf);
++          buf = NULL;
++        }
++    }
++
++  return home_dir;
++}
++
+ #ifdef ENABLE_RPMDB
+ 
+ struct rpmdbentry {
+@@ -1250,6 +1300,8 @@ struct rpmdbstate {
+ 
+   RpmHead *rpmhead;	/* header storage space */
+   unsigned int rpmheadsize;
++  int use_homedir;	/* force usage of private rpmdb in home dir */
++  int open_home_rpmdb;	/* internal; tracks rpmdb in homedir usage */
+ };
+ 
+ #endif
+@@ -1354,12 +1406,20 @@ freestate(struct rpmdbstate *state)
+ 
+ void *
+ rpm_state_create(Pool *pool, const char *rootdir)
++{
++  return rpm_state_create_real(pool, rootdir, 0);
++}
++
++void *
++rpm_state_create_real(Pool *pool, const char *rootdir, int use_homedir)
+ {
+   struct rpmdbstate *state;
+   state = solv_calloc(1, sizeof(*state));
+   state->pool = pool;
+   if (rootdir)
+     state->rootdir = solv_strdup(rootdir);
++  state->use_homedir = !!use_homedir;
++  state->open_home_rpmdb = 0;
+   return state;
+ }
+ 
+@@ -1602,6 +1662,9 @@ repo_add_rpmdb(Repo *repo, Repo *ref, int flags)
+   if (flags & REPO_USE_ROOTDIR)
+     state.rootdir = solv_strdup(pool_get_rootdir(pool));
+ 
++  state.use_homedir = flags & RPMDB_USE_HOMEDIR;
++  state.open_home_rpmdb = 0;
++
+   data = repo_add_repodata(repo, flags);
+ 
+   if (ref && !(ref->nsolvables && ref->rpmdbid && ref->pool == repo->pool))
+diff --git a/ext/repo_rpmdb.h b/ext/repo_rpmdb.h
+index 22aab886..5a21447d 100644
+--- a/ext/repo_rpmdb.h
++++ b/ext/repo_rpmdb.h
+@@ -27,6 +27,7 @@ extern Id repo_add_rpm(Repo *repo, const char *rpm, int flags);
+ #define RPM_ADD_WITH_CHANGELOG	(1 << 17)
+ #define RPM_ADD_FILTERED_FILELIST (1 << 18)
+ #define RPMDB_KEEP_GPG_PUBKEY   (1 << 19)
++#define RPMDB_USE_HOMEDIR	(1 << 20)
+ 
+ #define RPMDB_EMPTY_REFREPO	(1 << 30)	/* internal */
+ 
+@@ -35,8 +36,14 @@ extern Id repo_add_rpm(Repo *repo, const char *rpm, int flags);
+ #define RPM_ITERATE_FILELIST_WITHCOL	(1 << 2)
+ #define RPM_ITERATE_FILELIST_NOGHOSTS	(1 << 3)
+ 
+-/* create and free internal state, rootdir is the rootdir of the rpm database */
++/*
++ * create and free internal state, rootdir is the rootdir of the rpm database
++ * and use_homedir a boolean value that prefers a rpmdb located the user's home directory
++ * instead of the system locations, but will fall back to the latter if there is no
++ * database in the user's home directory
++ */
+ extern void *rpm_state_create(Pool *pool, const char *rootdir);
++extern void *rpm_state_create_real(Pool *pool, const char *rootdir, int use_homedir);
+ extern void *rpm_state_free(void *rpmstate);
+ 
+ /* return all matching rpmdbids */
+diff --git a/ext/repo_rpmdb_bdb.h b/ext/repo_rpmdb_bdb.h
+index 1c833171..9c4fac35 100644
+--- a/ext/repo_rpmdb_bdb.h
++++ b/ext/repo_rpmdb_bdb.h
+@@ -44,6 +44,8 @@ struct rpmdbstate {
+ 
+   RpmHead *rpmhead;	/* header storage space */
+   unsigned int rpmheadsize;
++  int use_homedir;	/* force usage of private rpmdb in home dir */
++  int open_home_rpmdb;	/* internal; tracks rpmdb in homedir usage */
+ 
+   int dbenvopened;	/* database environment opened */
+   int pkgdbopened;	/* package database openend */
+@@ -72,9 +74,28 @@ access_rootdir(struct rpmdbstate *state, const char *dir, int mode)
+ static void
+ detect_dbpath(struct rpmdbstate *state)
+ {
++
++  char *dbpath_prefix = solv_dupjoin(state->rootdir, "/", 0);
++
+   state->dbpath = access_rootdir(state, "/var/lib/rpm", W_OK) == -1
+-                  && access_rootdir(state, "/usr/share/rpm/Packages", R_OK) == 0
+-                  ? "/usr/share/rpm" : "/var/lib/rpm";
++                    && access_rootdir(state, "/usr/share/rpm/Packages", R_OK) == 0
++                    ? "/usr/share/rpm" : "/var/lib/rpm";
++
++  if (state->open_home_rpmdb)
++    {
++      char *home_dir = get_homedir();
++
++      if (home_dir)
++        {
++          state->dbpath = solv_dupjoin(dbpath_prefix, home_dir, "/.rpmdb/");
++
++          solv_free(home_dir);
++          home_dir = NULL;
++        }
++    }
++
++  solv_free(dbpath_prefix);
++  dbpath_prefix = NULL;
+ }
+ 
+ static int
+@@ -84,6 +105,7 @@ stat_database_name(struct rpmdbstate *state, char *dbname, struct stat *statbuf,
+   if (!state->dbpath)
+     detect_dbpath(state);
+   dbpath = solv_dupjoin(state->rootdir, state->dbpath, dbname);
++
+   if (stat(dbpath, statbuf))
+     {
+       if (seterror)
+diff --git a/ext/repo_rpmdb_librpm.h b/ext/repo_rpmdb_librpm.h
+index 35a46fac..66fc118e 100644
+--- a/ext/repo_rpmdb_librpm.h
++++ b/ext/repo_rpmdb_librpm.h
+@@ -21,6 +21,8 @@ struct rpmdbstate {
+ 
+   RpmHead *rpmhead;	/* header storage space */
+   unsigned int rpmheadsize;
++  int use_homedir;	/* force usage of private rpmdb in home dir */
++  int open_home_rpmdb;	/* internal; tracks rpmdb in homedir usage */
+ 
+   int dbenvopened;	/* database environment opened */
+   const char *dbpath;	/* path to the database */
+@@ -45,9 +47,28 @@ access_rootdir(struct rpmdbstate *state, const char *dir, int mode)
+ static void
+ detect_dbpath(struct rpmdbstate *state)
+ {
++
++  char *dbpath_prefix = solv_dupjoin(state->rootdir, "/", 0);
++
+   state->dbpath = access_rootdir(state, "/var/lib/rpm", W_OK) == -1
+                   && (access_rootdir(state, "/usr/share/rpm/Packages", R_OK) == 0 || access_rootdir(state, "/usr/share/rpm/rpmdb.sqlite", R_OK) == 0)
+                   ? "/usr/share/rpm" : "/var/lib/rpm";
++
++  if (state->open_home_rpmdb)
++    {
++      char *home_dir = get_homedir();
++
++      if (home_dir)
++        {
++          state->dbpath = solv_dupjoin(dbpath_prefix, home_dir, "/.rpmdb/");
++
++          solv_free(home_dir);
++          home_dir = NULL;
++        }
++    }
++
++  solv_free(dbpath_prefix);
++  dbpath_prefix = NULL;
+ }
+ 
+ static int
+-- 
+2.26.2
+
