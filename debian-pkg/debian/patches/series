@@ -5,3 +5,4 @@
 3020_tools-rpmdb2solve.c-add-homedir-functionality.patch
 9000_ext_repo_updateinfoxml.c_add-support-for-modular-data-aac9f0c2d791fa96bc9423231050f9e18fb973d6.patch
 0001_CVE-2019-20387.patch
+0001-Adapt-from-upstream-for-swig4-compatibility.patch

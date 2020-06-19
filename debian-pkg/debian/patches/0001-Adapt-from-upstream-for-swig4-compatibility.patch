@@ -1,0 +1,26 @@
+From 6e791ca47e7ee9744051eccb4e365601deb386b8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Pierret=20=28fepitre=29?=
+ <frederic.pierret@qubes-os.org>
+Date: Fri, 19 Jun 2020 13:02:56 +0200
+Subject: [PATCH] Adapt from upstream for swig4 compatibility
+
+---
+ bindings/solv.i | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/solv.i b/bindings/solv.i
+index 8fb469f0..1a07cf2f 100644
+--- a/bindings/solv.i
++++ b/bindings/solv.i
+@@ -573,7 +573,7 @@ SWIG_AsValDepId(void *obj, int *val) {
+ #if defined(SWIGRUBY)
+   SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Pool, SWIG_POINTER_DISOWN |  0 );
+ #elif defined(SWIGPYTHON)
+-  SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_Pool, SWIG_POINTER_DISOWN |  0 );
++  SWIG_ConvertPtr($self, &argp1,SWIGTYPE_p_Pool, SWIG_POINTER_DISOWN |  0 );
+ #elif defined(SWIGPERL)
+   SWIG_ConvertPtr(ST(0), &argp1,SWIGTYPE_p_Pool, SWIG_POINTER_DISOWN |  0 );
+ #elif defined(SWIGTCL)
+-- 
+2.25.4
+
