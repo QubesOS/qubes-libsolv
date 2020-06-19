@@ -1,0 +1,126 @@
+Description: Various typo and grammar fixes
+Author: Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+
+--- a/README
++++ b/README
+@@ -10,7 +10,7 @@ This code is based on two major, but ind
+     resolving package dependencies.
+ 
+ The sat-solver code has been written to aim for the newest packages,
+-record the decision tree to provide introspection, and also allows to
++record the decision tree to provide introspection, and also allows one to
+ provide the user with suggestions on how to deal with unsolvable
+ problems. It also takes advantage of the repository storage to
+ minimize memory usage.
+--- a/doc/gen/libsolv-bindings.3
++++ b/doc/gen/libsolv-bindings.3
+@@ -1988,7 +1988,7 @@ Add the metadata of a single rpm package
+ .RE
+ .\}
+ .sp
+-Add all pubkeys contained in the rpm database to the repository\&. Note that newer rpm versions also allow to store the pubkeys in some directory instead of the rpm database\&.
++Add all pubkeys contained in the rpm database to the repository\&. Note that newer rpm versions also allow one to store the pubkeys in some directory instead of the rpm database\&.
+ .sp
+ .if n \{\
+ .RS 4
+@@ -3423,7 +3423,7 @@ Update the matching installed packages t
+ .PP
+ \fBSOLVER_WEAKENDEPS\fR
+ .RS 4
+-Allow to break the dependencies of the matching packages\&. Handle with care\&.
++Allow one to break the dependencies of the matching packages\&. Handle with care\&.
+ .RE
+ .PP
+ \fBSOLVER_MULTIVERSION\fR
+--- a/doc/libsolv-bindings.txt
++++ b/doc/libsolv-bindings.txt
+@@ -1125,7 +1125,7 @@ Add the metadata of a single rpm package
+ 	repo.add_rpmdb_pubkeys()
+ 
+ Add all pubkeys contained in the rpm database to the repository. Note that
+-newer rpm versions also allow to store the pubkeys in some directory instead
++newer rpm versions also allow one to store the pubkeys in some directory instead
+ of the rpm database.
+ 
+ 	Solvable add_pubkey(const char *keyfile, int flags = 0)
+@@ -1945,7 +1945,7 @@ packages to the specified versions. See
+ updates about more information.
+  
+ *SOLVER_WEAKENDEPS*::
+-Allow to break the dependencies of the matching packages. Handle with care.
++Allow one to break the dependencies of the matching packages. Handle with care.
+ 
+ *SOLVER_MULTIVERSION*::
+ Mark the matched packages for multiversion install. If they get to be
+--- a/doc/libsolv-pool.txt
++++ b/doc/libsolv-pool.txt
+@@ -850,7 +850,7 @@ SOLVER_FLAG_ALLOW_VENDORCHANGE flag.
+ 
+ Boolean Dependencies
+ --------------------
+-Boolean Dependencies allow to build complex expressions from simple
++Boolean Dependencies allow one to build complex expressions from simple
+ dependencies. Note that depending on the package manager only a subset
+ of those may be useful. For example, debian currently only allows
+ an "OR" expression.
+--- a/doc/gen/testsolv.1
++++ b/doc/gen/testsolv.1
+@@ -45,7 +45,7 @@ Increase the debug level of the solver\&
+ .RS 4
+ Write the output in testcase format instead of human readable text\&. The output can then be used in the result section of the test case\&. If the
+ \fB\-r\fR
+-option is given twice, the output is formated for verbatim inclusion\&.
++option is given twice, the output is formatted for verbatim inclusion\&.
+ .RE
+ .PP
+ \fB\-l\fR \fIPKGSPEC\fR
+--- a/doc/testsolv.txt
++++ b/doc/testsolv.txt
+@@ -26,7 +26,7 @@ multiple times to further increase the a
+ *-r*::
+ Write the output in testcase format instead of human readable text.
+ The output can then be used in the result section of the test case.
+-If the *-r* option is given twice, the output is formated for
++If the *-r* option is given twice, the output is formatted for
+ verbatim inclusion.
+ 
+ *-l* 'PKGSPEC'::
+--- a/src/rules.c
++++ b/src/rules.c
+@@ -1607,7 +1607,7 @@ solver_addinfarchrules(Solver *solv, Map
+ 
+       if (allowedarchs.count && pool->implicitobsoleteusescolors && installed && bestscore)
+ 	{
+-	  /* need an extra pass for lockstep checking: we only allow to keep an inferior arch
++	  /* need an extra pass for lockstep checking: we only allow one to keep an inferior arch
+ 	   * if the corresponding installed package is not lock-stepped */
+ 	  queue_empty(&allowedarchs);
+ 	  FOR_PROVIDES(p, pp, s->name)
+--- a/src/solver.h
++++ b/src/solver.h
+@@ -145,10 +145,10 @@ struct _Solver {
+    * Solver configuration
+    *-------------------------------------------------------------------------------------------------------------*/
+ 
+-  int allowdowngrade;			/* allow to downgrade installed solvable */
+-  int allownamechange;			/* allow to change name of installed solvables */
+-  int allowarchchange;			/* allow to change architecture of installed solvables */
+-  int allowvendorchange;		/* allow to change vendor of installed solvables */
++  int allowdowngrade;			/* allow one to downgrade installed solvable */
++  int allownamechange;			/* allow one to change name of installed solvables */
++  int allowarchchange;			/* allow one to change architecture of installed solvables */
++  int allowvendorchange;		/* allow one to change vendor of installed solvables */
+   int allowuninstall;			/* allow removal of installed solvables */
+   int noupdateprovide;			/* true: update packages needs not to provide old package */
+   int needupdateprovide;		/* true: update packages must provide old package */
+--- a/doc/gen/libsolv-pool.3
++++ b/doc/gen/libsolv-pool.3
+@@ -1290,7 +1290,7 @@ There can be multiple equivalence classe
+ You can turn off the architecture replacement checks with the Solver\(cqs SOLVER_FLAG_ALLOW_VENDORCHANGE flag\&.
+ .SH "BOOLEAN DEPENDENCIES"
+ .sp
+-Boolean Dependencies allow to build complex expressions from simple dependencies\&. Note that depending on the package manager only a subset of those may be useful\&. For example, debian currently only allows an "OR" expression\&.
++Boolean Dependencies allow one to build complex expressions from simple dependencies\&. Note that depending on the package manager only a subset of those may be useful\&. For example, debian currently only allows an "OR" expression\&.
+ .PP
+ \fBREL_OR\fR
+ .RS 4
