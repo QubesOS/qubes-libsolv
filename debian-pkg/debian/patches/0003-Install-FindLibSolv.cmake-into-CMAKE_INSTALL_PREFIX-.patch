@@ -1,0 +1,27 @@
+From bdc42767c0d1ae4127d2b0829c71a8cd627cac26 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Pierret=20=28fepitre=29?=
+ <frederic.pierret@qubes-os.org>
+Date: Sat, 10 Oct 2020 10:35:17 +0200
+Subject: [PATCH] Install FindLibSolv.cmake into
+ ${CMAKE_INSTALL_PREFIX}/share/cmake/libsolv
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 767aa665..2e1466c4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -56,7 +56,7 @@ ENDIF (NOT PKGCONFIG_INSTALL_DIR)
+ 
+ # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
+ SET (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+-INSTALL( FILES ${CMAKE_MODULE_PATH}/FindLibSolv.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules )
++INSTALL( FILES ${CMAKE_MODULE_PATH}/FindLibSolv.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/libsolv )
+ 
+ # for shared libraries on windows (DLLs), we just export all symbols for now
+ SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+-- 
+2.26.2
+
