@@ -1,4 +1,4 @@
-1005_install-cmake-module-into-libdir.patch
 1006_various-typos.patch
 0001-repo_rpmdb-handle-dbpath-in-homedir.patch
 0002-rpmdb2solve.c-add-homedir-functionality.patch
+0003-Install-FindLibSolv.cmake-into-CMAKE_INSTALL_PREFIX-.patch
