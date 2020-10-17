@@ -1,3 +1,9 @@
+libsolv (0.7.14-1.2) unstable; urgency=medium
+
+  * fix changelog entry
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Sat, 17 Oct 2020 02:55:40 +0200
+
 libsolv (0.7.14-1.1) unstable; urgency=medium
 
   * Change previous install location of FindLibSolv.cmake
