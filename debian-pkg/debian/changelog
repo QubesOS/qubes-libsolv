@@ -4,7 +4,7 @@ libsolv (0.7.14-1.1) unstable; urgency=medium
 
  -- Frédéric Pierret (fepitre) <frederic.pierret@qubes-os.org>  Sun, 11 Oct 2020 16:43:29 +0200
 
-libsolv (0.7.14-1) --release; urgency=medium
+libsolv (0.7.14-1) unstable; urgency=medium
 
   * Initial commit
 
