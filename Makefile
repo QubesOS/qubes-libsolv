@@ -2,6 +2,7 @@ DIST ?= fc32
 VERSION := $(shell cat version)
 REL := $(shell cat rel)
 
+
 FEDORA_SOURCES := https://src.fedoraproject.org/rpms/libsolv/raw/f$(subst fc,,$(DIST))/f/sources
 SRC_FILE := libsolv-$(VERSION).tar.gz
 
